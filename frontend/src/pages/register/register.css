@@ -1,0 +1,20 @@
+.form-container {
+  width: 60vw;
+  margin: auto;
+}
+
+.form-input-row {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.error-message {
+  color: red;
+}
+
+.background-image {
+  background-image: url(../../assets/images/image-calculation.jpg);
+  background-size: cover;
+  background-position: center;
+  height: 100%;
+}
