@@ -1,8 +1,7 @@
-const express = require("express");
+const router = require("express").Router();
 const mongoose = require("mongoose");
-const router = express.Router();
-const jwt = require("jsonwebtoken")
-const PRIVATE_KEY = process.env.PRIVATE_KEY
+const jwt = require("jsonwebtoken");
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 const customerSchema = mongoose.Schema({
   first_name: String,
@@ -66,23 +65,18 @@ router.post("/login", async (req, res) => {
   //Query to add the customer into database
   const { email, password } = req.body;
   const customer = await customerModel.findOne({ email });
-  if (!customer) {
-     res.status(401).json({
-      error : "Email not found!",
-    });
-  }
-  if(customer?.password != password){
- res.status(401).json({
-      error : "Invalid password",
-    });
-  }
-  const token = jwt.sign({
-    _id : customer._id,
-    email : customer.email,
-    password: customer.password
-  },PRIVATE_KEY)
-  res.status(200).json({message: "Customer logged in successfully",token,customer})
-});
+  if (!customer) res.status(401).json({error: "Email not found!"})
+  if (customer?.password != password) res.status(401).json({error: "Invalid password"});
+  
+  const token = jwt.sign(
+    {
+      _id: customer._id,
+      email: customer.email,
+      password: customer.password,
+    },
+    PRIVATE_KEY,
+  );
+  res.status(200).json({ message: "Customer logged in successfully", token, customer })});
 
 //PUT API
 router.put("/:id", async (req, res) => {
