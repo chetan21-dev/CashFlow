@@ -5,7 +5,8 @@ const transactionSchema = {
     sender_account_number: Number,
     receiver_account_number : Number,
     receiver_email : String,
-    amount : Number
+    amount : Number,
+    timestamp : String
 }
 
 const transactionModel = mongoose.model("transactions", transactionSchema, "transactions")

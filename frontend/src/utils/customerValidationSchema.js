@@ -42,3 +42,13 @@ export const customerLoginSchema = z.object({
     password : z.string()
     .min(1, "Password is required")
 })
+
+export const depositBalanceSchma = z.object({
+    email : z.string()
+    .min(1, "Email is required")
+    .max(30, "Email should be less than 30 characters")
+    .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Please enter a valid email"),
+    balance : z.string()
+    .min(1, "Amount is required")
+    .regex(/^(?:[1-9]\d{2,}|\d{4,})$/, "Amount should be atleast 100"),
+})

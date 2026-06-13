@@ -3,6 +3,7 @@ import { getLocalStorage } from "../utils/localStorage";
 
 export const ProtectedRoute = () => {
   const token = getLocalStorage("jwt_token");
+  console.log("token",token)
   if (!token) return  <Navigate to={"/login"} />;
   else return <Outlet />;
 };

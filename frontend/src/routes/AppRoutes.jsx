@@ -5,6 +5,7 @@ import Register from "../pages/register/Register";
 import Login from "../pages/login/Login";
 import { ProtectedRoute } from "./ProtectedRoute";
 import Transact from "../pages/transact/Transact";
+import Deposit from "../pages/deposit/Deposit";
 
 export const router = createBrowserRouter([
   {
@@ -29,6 +30,10 @@ export const router = createBrowserRouter([
           {
             path : "/transact",
             element : <Transact/>
+          },
+          {
+            path : "/deposit",
+            element : <Deposit/>
           }
         ]
       }

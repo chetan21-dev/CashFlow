@@ -4,9 +4,11 @@ import axios from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import "../register/register.css";
 import { customerValidationSchema } from "../../utils/customerValidationSchema";
-import registerCustomer from '../../assets/images/image-calculation.jpg'
+import { useNavigate } from "react-router-dom";
 
 const Register = () => {
+  const navigate = useNavigate();
+
   const {
     register,
     formState: { errors },
@@ -32,7 +34,7 @@ const Register = () => {
       .then((res) => {
         toast.success(res?.data?.message, {
           position: "top-right",
-          autoClose: 5000,
+          autoClose: 3000,
           hideProgressBar: false,
           closeOnClick: false,
           pauseOnHover: true,
@@ -42,13 +44,14 @@ const Register = () => {
           transition: Bounce,
         });
         reset();
+        setTimeout(() => {
+          navigate("/login");
+        }, 4000);
       });
   };
 
-
   return (
-    <div className="d-flex justify-content-center align-items-center background-image h-100"
-    >
+    <div className="d-flex justify-content-center align-items-center background-image h-100">
       <form
         className="form-container p-4 row g-4 bg-light rounded z-1"
         onSubmit={handleSubmit(submit)}
