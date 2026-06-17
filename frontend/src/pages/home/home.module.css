@@ -1,0 +1,33 @@
+.hero {
+    height: 100%;
+    background: url('../../assets/images/bank-transfer.jpg') center/cover no-repeat;
+    position: relative;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(8px);
+    background: rgba(0,0,0,0.4);
+}
+
+.overlay {
+    position: relative;
+    z-index: 1;
+    color: white;
+    text-align: center;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.overlay h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.overlay p {
+    font-size: 1.2rem;
+    max-width: 600px;
+    margin: auto;
+}   

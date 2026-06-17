@@ -1,6 +1,8 @@
 .form-container {
-  width: 60vw;
-  margin: auto;
+  /* width: 60vw; */
+  /* margin: auto; */
+  max-height: 500px;
+  overflow-y: auto;
 }
 
 .form-input-row {
@@ -12,7 +14,7 @@
   color: red;
 }
 
-.background-image {
+.backgroundImage {
   background-image: url(../../assets/images/image-calculation.jpg);
   background-size: cover;
   background-position: center;

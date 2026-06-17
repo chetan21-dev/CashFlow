@@ -14,6 +14,7 @@ export const customerValidationSchema = z.object({
     .min(1, "Last name is required")
     .min(2, "First name should be more than 2 characters")
     .regex(/^[a-zA-Z]+$/, "Only characters are allowed"),
+    gender : z.string(),
     email : z.string()
     .min(1, "Email is required")
     .max(30, "Email should be less than 30 characters")
@@ -44,10 +45,9 @@ export const customerLoginSchema = z.object({
 })
 
 export const depositBalanceSchma = z.object({
-    email : z.string()
-    .min(1, "Email is required")
-    .max(30, "Email should be less than 30 characters")
-    .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Please enter a valid email"),
+    account_number : z.string()
+    .min(1, "Account number is required")
+    .max(5, "Account number should be only 5 digits"),
     balance : z.string()
     .min(1, "Amount is required")
     .regex(/^(?:[1-9]\d{2,}|\d{4,})$/, "Amount should be atleast 100"),

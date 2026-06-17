@@ -1,11 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { customerLoginSchema } from "../../utils/customerValidationSchema";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { Bounce, ToastContainer } from "react-toastify";
 import axios from "axios";
 import { ErrorToast, SuccessToast } from "../../utils/globalFunctions";
 import { setLocalStorage } from "../../utils/localStorage";
 import { useNavigate } from "react-router-dom";
+import styles from "../login/login.module.css"
 
 const Login = () => {
 
@@ -39,18 +40,20 @@ const Login = () => {
   };
 
   return (
-    <div className="h-100 d-flex justify-content-center align-items-center">
+    <div className={`h-100 d-flex justify-content-center align-items-center ${styles.backgroundImage}`}>
       <form
-        className="form-container row g-3 bg-light rounded p-2"
+        className={`row g-3 bg-dark bg-opacity-25 bg-radient rounded p-4 ${styles.formContainer}`}
         onSubmit={handleSubmit(submit)}
       >
         <div>
-          <label htmlFor="emailInput" className="form-label">
+          <p className="text-center fs-4 text-white">LOGIN</p>
+          <label htmlFor="emailInput" className="form-label text-light">
             Email address
           </label>
-          <input
+        <input
             type="email"
             className="form-control"
+            placeholder="Enter Email Address"
             id="emailInput"
             {...register("email")}
             aria-describedby="emailHelp"
@@ -60,12 +63,13 @@ const Login = () => {
           </div>
         </div>
         <div>
-          <label htmlFor="exampleInputPassword1" className="form-label">
+          <label htmlFor="exampleInputPassword1" className="form-label text-light">
             Password
           </label>
           <input
             type="password"
             className="form-control"
+            placeholder="Enter Password"
             id="exampleInputPassword1"
             {...register("password")}
           />
@@ -74,7 +78,7 @@ const Login = () => {
           </div>
         </div>
         <div className="col-12 text-center">
-          <button className="btn btn-primary" type="submit">
+          <button className="btn btn-outline-light" type="submit">
             Submit
           </button>
         </div>
