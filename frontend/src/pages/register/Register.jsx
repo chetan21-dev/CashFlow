@@ -62,7 +62,7 @@ const Register = () => {
       <div className="d-flex flex-grow-1">
         <img src="\src\assets\images\register-customer.jpg" width="850" height="100%"/>
       </div>
-      <div className="d-flex flex-grow-1 px-3">
+      <div className="d-flex flex-grow-1 m-4 px-3 rounded bg-secondary-subtle">
         <form
           className="form-container mt-2 row g-3"
           onSubmit={handleSubmit(submit)}

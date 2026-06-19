@@ -1,21 +1,9 @@
 const router = require("express").Router();
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
+const { customerModel } = require("../models/customerModel");
+const { accountModel } = require("../models/accountModel");
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
-
-const customerSchema = mongoose.Schema({
-  first_name: String,
-  middle_name: String,
-  last_name: String,
-  email: String,
-  mobile: Number,
-  gender: String,
-  aadhar_number: String,
-  pan_number: String,
-  password: String,
-});
-
-const customerModel = mongoose.model("customers", customerSchema, "customers");
 
 //GET API
 router.get("", async (req, res) => {
@@ -54,7 +42,7 @@ router.get("/:id", async (req, res) => {
 router.post("/register", async (req, res) => {
   //Query to add the customer into database
   const user = await customerModel.create(req.body);
-  console.log("user",user)
+  console.log("user", user);
   res.status(200).json({
     message: "Data added successfully",
     user,
@@ -65,11 +53,11 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   //Query to add the customer into database
   const { email, password } = req.body;
-  const customer = await customerModel.findOne({ email });
-  console.log("cu",customer)
+  const customer = await customerModel.findOne({ email }).lean();
+  const account = await accountModel.findOne({ email });
+  customer['account_number'] = account.account_number
   if (!customer) return res.status(401).json({ error: "Email not found!" });
-  if (customer?.password != password)
-    return res.status(401).json({ error: "Invalid password" });
+  if (customer?.password != password) return res.status(401).json({ error: "Invalid password" });
 
   const token = jwt.sign(
     {
@@ -79,10 +67,10 @@ router.post("/login", async (req, res) => {
     },
     PRIVATE_KEY,
   );
-  
+  customer.account_number = account?.account_number
   return res
     .status(200)
-    .json({ message: "Customer logged in successfully", token, customer });
+    .json({ message: "Customer logged in successfully", token, customer});
 });
 
 //PUT API
@@ -99,7 +87,7 @@ router.put("/:id", async (req, res) => {
     });
   }
   res.status(200).json({
-    message: "Data updated   successfully",
+    message: "Data updated successfully",
     user,
   });
 });

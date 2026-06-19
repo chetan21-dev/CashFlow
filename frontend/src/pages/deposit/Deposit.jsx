@@ -4,7 +4,7 @@ import axios from "axios";
 import { useForm } from "react-hook-form";
 import { ErrorToast, SuccessToast } from "../../utils/globalFunctions";
 import { useNavigate } from "react-router-dom";
-import { depositBalanceSchma } from "../../utils/customerValidationSchema";
+import { depositBalanceSchema } from "../../utils/customerValidationSchema";
 import { Bounce, ToastContainer } from "react-toastify";
 
 const Deposit = () => {
@@ -15,7 +15,7 @@ const Deposit = () => {
     reset,
     handleSubmit,
   } = useForm({
-    resolver: zodResolver(depositBalanceSchma),
+    resolver: zodResolver(depositBalanceSchema),
     defaultValues: {
       account_number: "",
       balance: "",
@@ -35,6 +35,7 @@ const Deposit = () => {
         ErrorToast(error.response.data?.message);
       });
   };
+  
   return (
     <div
       className={`container-fluid box d-flex justify-content-center align-items-center h-100 ${styles.backgroundImage}`}

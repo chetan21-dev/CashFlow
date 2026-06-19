@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
 const customerSchema = mongoose.Schema({
   first_name: String,
@@ -13,3 +13,5 @@ const customerSchema = mongoose.Schema({
 });
 
 const customerModel = mongoose.model("customers", customerSchema, "customers");
+
+module.exports = { customerModel };

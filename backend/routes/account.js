@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { accountModel } = require("../models/accoundModel");
+const { accountModel } = require("../models/accountModel");
 const { generateAccountNumber } = require("../utils/generateAccountNumber");
 
 //API to create new customer account

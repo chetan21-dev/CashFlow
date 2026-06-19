@@ -1,8 +1,10 @@
 .form-container {
-  /* width: 60vw; */
-  /* margin: auto; */
   max-height: 500px;
   overflow-y: auto;
+}
+
+.form-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
 }
 
 .form-input-row {

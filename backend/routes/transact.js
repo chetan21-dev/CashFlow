@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { accountModel } = require("../models/accoundModel");
+const { accountModel } = require("../models/accountModel");
 const { transactionModel } = require("../models/transactionModel");
 
 //API to tranfer amount from one account to another
