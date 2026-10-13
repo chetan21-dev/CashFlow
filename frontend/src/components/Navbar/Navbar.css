@@ -1,0 +1,14 @@
+.app-navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
+
+.app-navbar-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #4f8cff, #7b5cff);
+}
+
+.app-navbar-user { line-height: 1.15; }

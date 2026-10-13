@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const { accountModel } = require("../models/accountModel");
 const { generateAccountNumber } = require("../utils/generateAccountNumber");
+const verifyToken = require("../middleware/verifyToken");
 
 //API to create new customer account
 router.post("", async (req, res) => {
@@ -14,24 +15,39 @@ router.post("", async (req, res) => {
   });
 });
 
-//API to check the customer account balance
-router.get("/:account_number", async (req, res) => {
-  const customer = await accountModel.findOne({
-    account_number: req.params.account_number,
-  });
-  if (!customer) res.status(404).json({ message: "Customer not found!" });
+// To Get account details of the logged-in user's 
+router.get("/me", verifyToken, async (req, res) => {
+  const account = await accountModel
+    .findOne({ account_number: Number(req.user.account_number) })
+    .select("account_number name balance")
+    .lean();
+
+  if (!account) {
+    return res.status(404).json({ message: "Account not found" });
+  }
+
   res.status(200).json({
     message: "success",
-    balance: customer.balance,
+    account_number: account.account_number,
+    name: account.name,
+    balance: account.balance,
   });
 });
 
 //API to deposit amount to self account
-router.post("/:account_number", async (req, res) => {
-  const { balance } = req.body;
+router.post("/:account_number", verifyToken, async (req, res) => {
+  if (Number(req.params.account_number) !== Number(req.user.account_number)) {
+    return res.status(403).json({ message: "Access denied" });
+  }
+
+  const amount = Number(req.body.balance);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return res.status(400).json({ message: "Invalid amount" });
+  }
+
   const account = await accountModel.findOneAndUpdate(
     { account_number: req.params.account_number },
-    { $inc: { balance: balance } },
+    { $inc: { balance: amount } },
     { new: true },
   );
   if (account) {

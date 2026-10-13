@@ -1,17 +1,21 @@
-import { useForm } from "react-hook-form";
-import { ToastContainer, toast, Bounce } from "react-toastify";
-import axios from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
-import "../register/register.css";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import registerImage from "../../assets/images/register-customer.jpg";
+import FormField from "../../components/common/FormField";
 import { customerValidationSchema } from "../../utils/customerValidationSchema";
-import { useNavigate } from "react-router-dom";
+import { ErrorToast, SuccessToast } from "../../utils/globalFunctions";
+import { authPageStyle } from "../../utils/pageBackground";
+
+const API = "http://localhost:4000";
 
 const Register = () => {
   const navigate = useNavigate();
 
   const {
     register,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     reset,
     handleSubmit,
   } = useForm({
@@ -22,215 +26,178 @@ const Register = () => {
       last_name: "",
       gender: "",
       email: "",
-      pan_number: "",
-      aadhaar_number: "",
+      mobile: "",
       password: "",
+      aadhaar_number: "",
+      pan_number: "",
     },
   });
 
   const submit = async (data) => {
-    await axios
-      .post("http://localhost:4000/customer/register", data)
-      .then(async (res) => {
-        const fullName = `${res.data.user.first_name} ${res.data.user.last_name}`
-        const customerEmail= res.data.user.email
-        await axios.post("http://localhost:4000/account",{
-          name : fullName,
-          email: customerEmail
-        }).then((response) => {
-          toast.success(res?.data?.message, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-            transition: Bounce,
-          });
-          reset();
-          setTimeout(() => {
-            navigate("/login");
-          }, 4000);
-        })
+    try {
+      const { data: res } = await axios.post(`${API}/customer/register`, data);
+
+      // Create the bank account for the new customer
+      await axios.post(`${API}/account`, {
+        name: `${res.user.first_name} ${res.user.last_name}`,
+        email: res.user.email,
       });
+
+      SuccessToast(res.message);
+      reset();
+      navigate("/login");
+    } catch (error) {
+      ErrorToast(
+        error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Registration failed. Please try again."
+      );
+    }
   };
 
   return (
-    <div className="d-flex h-100">
-      <div className="d-flex flex-grow-1">
-        <img src="\src\assets\images\register-customer.jpg" width="850" height="100%"/>
-      </div>
-      <div className="d-flex flex-grow-1 m-4 px-3 rounded bg-secondary-subtle">
-        <form
-          className="form-container mt-2 row g-3"
-          onSubmit={handleSubmit(submit)}
-          >
-          <p className="text-center fs-4">REGISTER</p>
-          <div>
-            <label htmlFor="firstNameInput" className="form-label">
-              First Name
-            </label>
-            <input
-              type="text"
-              className="form-control shadow p-2 bg-body-tertiary rounded"
-              id="firstNameInput"
-              {...register("first_name")}
-            />
-            <div id="firstNameInput" className="form-text">
-              <p className="error-message">{errors.first_name?.message}</p>
-            </div>
+    <div
+      className="d-flex align-items-center justify-content-center px-3 py-5"
+      style={authPageStyle(registerImage)}
+    >
+      <div className="card border-0 shadow-lg w-100" style={{ maxWidth: 720 }}>
+        <div className="card-body p-4 p-md-5">
+          <div className="text-center mb-4">
+            <h1 className="h3 fw-bold mb-1">Create your account</h1>
+            <p className="text-body-secondary mb-0">Fill in your details to get started</p>
           </div>
-          <div className="">
-            <label htmlFor="middleNameInput" className="form-label">
-              Middle Name
-            </label>
-            <input
-              type="text"
-              className="form-control shadow p-2 bg-body-tertiary rounded"
-              id="middleNameInput"
-              {...register("middle_name")}
-            />
-            <div id="middleNameInput" className="form-text">
-              <p className="error-message">{errors.middle_name?.message}</p>
-            </div>
-          </div>
-          <div className="">
-            <label htmlFor="lastNameInput" className="form-label">
-              Last Name
-            </label>
-            <input
-              type="text"
-              className="form-control shadow p-2 bg-body-tertiary rounded"
-              id="lastNameInput"
-              {...register("last_name")}
-            />
-            <div id="lastNameInput" className="form-text">
-              <p className="error-message">{errors.last_name?.message}</p>
-            </div>
-          </div>
-          <div className=" flex align-items-center">
-            <label className="me-3">Gender</label>
-            <div className="form-check form-check-inline">
-              <input
-                className="form-check-input"
-                type="radio"
-                {...register("gender")}
-                value="Male"
-                id="inlineRadio1"
+
+          <form onSubmit={handleSubmit(submit)} noValidate>
+            <div className="row g-3">
+              {/* Name */}
+              <FormField
+                id="firstName"
+                label="First Name"
+                className="col-md-4"
+                autoComplete="given-name"
+                error={errors.first_name}
+                registration={register("first_name")}
               />
-              <label className="form-check-label" htmlFor="inlineRadio1">
-                Male
-              </label>
-            </div>
-            <div className="form-check form-check-inline">
-              <input
-                className="form-check-input"
-                type="radio"
-                {...register("gender")}
-                id="inlineRadio2"
-                value="Female"
+              <FormField
+                id="middleName"
+                label="Middle Name (optional)"
+                className="col-md-4"
+                autoComplete="additional-name"
+                error={errors.middle_name}
+                registration={register("middle_name")}
               />
-              <label className="form-check-label" htmlFor="inlineRadio2">
-                Female
-              </label>
+              <FormField
+                id="lastName"
+                label="Last Name"
+                className="col-md-4"
+                autoComplete="family-name"
+                error={errors.last_name}
+                registration={register("last_name")}
+              />
+
+              {/* Gender */}
+              <div className="col-12">
+                <span className="form-label d-block">Gender</span>
+                {["Male", "Female"].map((g) => (
+                  <div className="form-check form-check-inline" key={g}>
+                    <input
+                      className={`form-check-input ${errors.gender ? "is-invalid" : ""}`}
+                      type="radio"
+                      id={`gender${g}`}
+                      value={g}
+                      {...register("gender")}
+                    />
+                    <label className="form-check-label" htmlFor={`gender${g}`}>
+                      {g}
+                    </label>
+                  </div>
+                ))}
+                {errors.gender && (
+                  <div className="text-danger small mt-1" role="alert">
+                    {errors.gender.message}
+                  </div>
+                )}
+              </div>
+
+              {/* Contact */}
+              <FormField
+                id="email"
+                label="Email address"
+                type="email"
+                className="col-md-6"
+                autoComplete="email"
+                placeholder="you@example.com"
+                error={errors.email}
+                registration={register("email")}
+              />
+              <FormField
+                id="mobile"
+                label="Mobile Number"
+                type="tel"
+                className="col-md-6"
+                inputMode="numeric"
+                maxLength={10}
+                autoComplete="tel"
+                error={errors.mobile}
+                registration={register("mobile")}
+              />
+
+              {/* Security */}
+              <FormField
+                id="password"
+                label="Password"
+                type="password"
+                autoComplete="new-password"
+                error={errors.password}
+                registration={register("password")}
+              />
+
+              {/* Identity */}
+              <FormField
+                id="aadhaar"
+                label="Aadhaar Number"
+                className="col-md-6"
+                inputMode="numeric"
+                maxLength={12}
+                error={errors.aadhaar_number}
+                registration={register("aadhaar_number")}
+              />
+              <FormField
+                id="pan"
+                label="PAN Number"
+                className="col-md-6 text-uppercase"
+                maxLength={10}
+                error={errors.pan_number}
+                registration={register("pan_number")}
+              />
             </div>
-          </div>
-          <div className="">
-            <label htmlFor="emailInput" className="form-label">
-              Email address
-            </label>
-            <input
-              type="email"
-              className="form-control shadow p-2 bg-body-tertiary rounded"
-              id="emailInput"
-              {...register("email")}
-              aria-describedby="emailHelp"
-            />
-            <div id="emailInput" className="form-text">
-              <p className="error-message">{errors.email?.message}</p>
+
+            <div className="d-flex gap-2 mt-4">
+              <button className="btn btn-primary flex-grow-1" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+                    Creating account...
+                  </>
+                ) : (
+                  "Register"
+                )}
+              </button>
+              <button
+                className="btn btn-outline-secondary"
+                type="button"
+                onClick={() => reset()}
+                disabled={isSubmitting}
+              >
+                Reset
+              </button>
             </div>
-          </div>
-          <div className="">
-            <label htmlFor="exampleInputPassword1" className="form-label">
-              Password
-            </label>
-            <input
-              type="password"
-              className="form-control shadow p-2 bg-body-tertiary rounded"
-              id="exampleInputPassword1"
-              {...register("password")}
-            />
-            <div id="exampleInputPassword1" className="form-text">
-              <p className="error-message">{errors.password?.message}</p>
-            </div>
-          </div>
-          <div className="">
-            <label htmlFor="mobileInput" className="form-label">
-              Mobile Number
-            </label>
-            <input
-              type="number"
-              className="form-control shadow p-2 bg-body-tertiary rounded"
-              id="mobileInput"
-              {...register("mobile")}
-              aria-describedby="emailHelp"
-            />
-            <div id="mobileInput" className="form-text">
-              <p className="error-message">{errors.mobile?.message}</p>
-            </div>
-          </div>
-          <div className="">
-            <label htmlFor="aadharInput" className="form-label">
-              Aadhaar Number
-            </label>
-            <input
-              type="text"
-              className="form-control shadow p-2 bg-body-tertiary rounded"
-              id="aadharInput"
-              {...register("aadhaar_number")}
-            />
-            <div id="aadharInput" className="form-text">
-              <p className="error-message">{errors.aadhaar_number?.message}</p>
-            </div>
-          </div>
-          <div className="">
-            <label htmlFor="panInput" className="form-label">
-              PAN Number
-            </label>
-            <input
-              type="text"
-              className="form-control shadow p-2 bg-body-tertiary rounded"
-              id="panInput"
-              {...register("pan_number")}
-            />
-            <div id="panInput" className="form-text">
-              <p className="error-message">{errors.pan_number?.message}</p>
-            </div>
-          </div>
-          <div className="col-12 d-flex justify-content-center gap-2">
-            <button className="btn btn-primary" type="submit">
-              Submit
-            </button>
-             <button className="btn btn-primary" onClick={() => reset()}>
-              Reset
-            </button>
-          </div>
-        </form>
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick={false}
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-          transition={Bounce}
-        />
+          </form>
+
+          <p className="text-center text-body-secondary mt-4 mb-0">
+            Already have an account? <Link to="/login">Login</Link>
+          </p>
+        </div>
       </div>
     </div>
   );

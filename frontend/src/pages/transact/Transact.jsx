@@ -1,12 +1,52 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import axios from "axios";
 import { useForm } from "react-hook-form";
 import { transactionSchema } from "../../utils/customerValidationSchema";
 import { Bounce, ToastContainer } from "react-toastify";
+import { useEffect, useState } from "react";
+import { ErrorToast, SuccessToast } from "../../utils/globalFunctions";
+import Pagination from "../../components/Pagination";
+import { getLocalStorage } from "../../utils/localStorage";
+import { useBalance } from "../../hooks/useBalance";
+const LIMIT = 10; // outside the component so it never triggers the effect
 
 const Transact = () => {
+  const [history, setHistory] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0); // bump this to refetch
+  const balance = useBalance(refreshKey);
+
+  useEffect(() => {
+    let ignore = false; // prevents setting state after unmount or a newer request
+
+    const loadHistory = async () => {
+      try {
+        const res = await axios.get("http://localhost:4000/transact/history", {
+          params: { page, limit : LIMIT },
+          headers: { Authorization: `Bearer ${getLocalStorage("token")}` },
+        });
+        if (!ignore) {
+          setHistory(res.data.data);
+          setTotalPages(res.data.totalPages);
+          setTotal(res.data.total);
+        }
+      } catch (error) {
+        // ErrorToast(error.response?.data?.message);
+      }
+    };
+
+    loadHistory();
+
+    return () => {
+      ignore = true;
+    };
+  }, [page, refreshKey]);
+
   const {
     register,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     reset,
     handleSubmit,
   } = useForm({
@@ -18,86 +58,171 @@ const Transact = () => {
   });
 
   const submit = async (data) => {
-    // await axios
-    //   .post(`http://localhost:4000/account/${data.account_number}`,{
-    //     balance : data.balance
-    //   })
-    //   .then((res) => {
-    //     SuccessToast(res.data.message);
-    //     reset();
-    //   })
-    //   .catch((error) => {
-    //     ErrorToast(error.response.data?.message);
-    //   });
+    try {
+      const res = await axios.post(
+        "http://localhost:4000/transact",
+        { receiver_account_number: data.account_number, amount: data.amount },
+        {
+          headers: { Authorization: `Bearer ${getLocalStorage("token")}` },
+        },
+      );
+      SuccessToast(res.data.message);
+      reset();
+      setPage(1);
+      setRefreshKey((k) => k + 1); // refetch even if already on page 1
+    } catch (error) {
+      ErrorToast(error.response?.data?.message);
+    }
   };
 
   return (
     <div className="container-fluid">
       <div>
-        <div
-          className="d-flex justify-content-between"
-        >
-          <div>
-            <form onSubmit={handleSubmit(submit)}>
-              <div className="d-flex gap-3 p-2">
-                <div class="input-group">
-                  <span class="input-group-text">Account Number</span>
+        <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3 p-2">
+          <form
+            className="flex-grow-1"
+            onSubmit={handleSubmit(submit)}
+            noValidate
+          >
+            <div className="row g-3 align-items-start">
+              {/* Account number */}
+              <div className="col-12 col-md-5">
+                <div className="input-group shadow-sm">
+                  <label
+                    className="input-group-text"
+                    htmlFor="accountNumberInput"
+                  >
+                    Account Number
+                  </label>
                   <input
                     type="number"
-                    className="form-control shadow bg-body-tertiary rounded-end"
                     id="accountNumberInput"
+                    className={`form-control ${errors.account_number ? "is-invalid" : ""}`}
+                    aria-invalid={!!errors.account_number}
+                    aria-describedby="accountNumberError"
                     {...register("account_number")}
                   />
-                  <div id="accountNumberInput" className="form-text">
-                    <p className="error-message">
-                      {errors.account_number?.message}
-                    </p>
-                  </div>
                 </div>
-                {/* <div className="input-group"> */}
-                <div className="input-group">
-                  <span class="input-group-text">Enter Amount</span>
+                {errors.account_number && (
+                  <div
+                    id="accountNumberError"
+                    className="text-danger small mt-1"
+                    role="alert"
+                  >
+                    {errors.account_number.message}
+                  </div>
+                )}
+              </div>
+
+              {/* Amount */}
+              <div className="col-12 col-md-5">
+                <div className="input-group shadow-sm">
+                  <label className="input-group-text" htmlFor="amountInput">
+                    Amount
+                  </label>
                   <span className="input-group-text">₹</span>
                   <input
                     type="number"
-                    className="form-control shadow bg-body-tertiary rounded-end"
-                    id="balanceInput"
-                    {...register("balance")}
-                    aria-label="Amount (to the nearest rupee)"
+                    id="amountInput"
+                    step="0.01"
+                    className={`form-control ${errors.amount ? "is-invalid" : ""}`}
+                    aria-invalid={!!errors.amount}
+                    aria-describedby="amountError"
+                    {...register("amount")}
                   />
-                  <div id="balanceInput" className="form-text">
-                    <p className="error-message">{errors.balance?.message}</p>
+                </div>
+                {errors.amount && (
+                  <div
+                    id="amountError"
+                    className="text-danger small mt-1"
+                    role="alert"
+                  >
+                    {errors.amount.message}
                   </div>
-                </div>
-                {/* </div> */}
-                <div className="d-flex align-items-center">
-                  <button className="btn btn-primary" type="submit">
-                    Transfer
-                  </button>
-                </div>
+                )}
               </div>
-            </form>
-            <ToastContainer
-              position="top-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick={false}
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-              transition={Bounce}
-            />
-          </div>
-          <div className="d-flex align-items-center me-2">
-            <div>Balance : 1000</div>
+
+              {/* Submit */}
+              <div className="col-12 col-md-2">
+                <button
+                  className="btn btn-primary w-100"
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Transferring..." : "Transfer"}
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <div
+            className="d-flex align-items-center fw-semibold text-nowrap me-2"
+            style={{ height: "38px" }}
+          >
+            Balance : ₹{balance}
           </div>
         </div>
-        <div style={{ backgroundColor: "skyblue", border: "1px solid black" }}>
-          <p>Section 2</p>
-        </div>
+
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+          transition={Bounce}
+        />
+
+<div className="mt-3">
+  <div className="table-responsive">
+    <table className="table table-striped table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Counterparty</th>
+          <th>Amount</th>
+          <th>Date</th>
+          <th>Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        {history?.length === 0 ? (
+          <tr>
+            <td colSpan="4" className="text-center text-muted">
+              No transactions yet
+            </td>
+          </tr>
+        ) : (
+          history?.map((t) => (
+            <tr key={t.id}>
+              <td>
+                {t.counterpartyName}
+                <small className="text-muted d-block">{t.counterpartyAccount}</small>
+              </td>
+              <td className={t.type === "credit" ? "text-success" : "text-danger"}>
+                {t.type === "credit" ? "+" : "-"}₹{t.amount}
+              </td>
+              <td>{new Date(t.date).toLocaleString("en-IN")}</td>
+              <td>
+                <span className={`badge ${t.type === "credit" ? "bg-success" : "bg-danger"}`}>
+                  {t.type === "credit" ? "Credit" : "Debit"}
+                </span>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+
+  <div className="d-flex justify-content-between align-items-center">
+    <span className="text-muted small">
+      {total === 0
+        ? "0 transactions"
+        : `Showing ${(page - 1) * LIMIT + 1}–${Math.min(page * LIMIT, total)} of ${total}`}
+    </span>
+    <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+  </div>
+</div>
       </div>
     </div>
   );

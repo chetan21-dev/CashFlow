@@ -42,7 +42,6 @@ router.get("/:id", async (req, res) => {
 router.post("/register", async (req, res) => {
   //Query to add the customer into database
   const user = await customerModel.create(req.body);
-  console.log("user", user);
   res.status(200).json({
     message: "Data added successfully",
     user,
@@ -63,6 +62,7 @@ router.post("/login", async (req, res) => {
     {
       _id: customer._id,
       email: customer.email,
+      account_number : customer.account_number,
       password: customer.password,
     },
     PRIVATE_KEY,
