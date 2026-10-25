@@ -1,8 +1,13 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { getLocalStorage } from "../utils/localStorage";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export const ProtectedRoute = () => {
-  const token = getLocalStorage("token");
-  if (!token) return  <Navigate to={"/login"} />;
-  else return <Outlet />;
+  const { isLoggedIn } = useAuth();
+  const location = useLocation();
+
+  return isLoggedIn ? (
+    <Outlet />
+  ) : (
+    <Navigate to="/login" replace state={{ from: location }} />
+  );
 };

@@ -2,11 +2,11 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Link, Navigate } from "react-router-dom";
-import axios from "axios";
 import heroImage from "../../assets/images/bank-transfer.jpg";
 import { customerLoginSchema } from "../../utils/customerValidationSchema";
-import { ErrorToast, SuccessToast } from "../../utils/globalFunctions";
 import { useAuth } from "../../context/AuthContext";
+import { errorToast, successToast } from "../../utils/appToast";
+import { api } from "../../utils/api";
 
 // Same background treatment as the Home hero (no Bootstrap utility exists for this)
 const pageStyle = {
@@ -17,6 +17,7 @@ const pageStyle = {
 };
 
 const Login = () => {
+  "use no memo";
   const { isLoggedIn, login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -31,14 +32,15 @@ const Login = () => {
 
   const submit = async (data) => {
     try {
-      const res = await axios.post("http://localhost:4000/customer/login", data);
-      SuccessToast(res.data?.message);
-      login(res.data.token); // saves the token and updates the navbar
+      const res = await api.post("/auth/login", data);
+      console.log("res",res)
+      successToast(res.data.message);
+      login(res.data.accessToken); // renamed from `token`
     } catch (error) {
-      ErrorToast(
+      errorToast(
         error.response?.data?.error ||
           error.response?.data?.message ||
-          "Unable to login. Please try again."
+          "Unable to login. Please try again.",
       );
     }
   };
@@ -75,7 +77,11 @@ const Login = () => {
                 {...register("email")}
               />
               {errors.email && (
-                <div id="emailError" className="text-danger small mt-1" role="alert">
+                <div
+                  id="emailError"
+                  className="text-danger small mt-1"
+                  role="alert"
+                >
                   {errors.email.message}
                 </div>
               )}
@@ -107,16 +113,27 @@ const Login = () => {
                 </button>
               </div>
               {errors.password && (
-                <div id="passwordError" className="text-danger small mt-1" role="alert">
+                <div
+                  id="passwordError"
+                  className="text-danger small mt-1"
+                  role="alert"
+                >
                   {errors.password.message}
                 </div>
               )}
             </div>
 
-            <button className="btn btn-primary w-100" type="submit" disabled={isSubmitting}>
+            <button
+              className="btn btn-primary w-100"
+              type="submit"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? (
                 <>
-                  <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                  />
                   Logging in...
                 </>
               ) : (

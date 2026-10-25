@@ -1,101 +1,155 @@
-import styles from "../deposit/deposit.module.css";
 import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
 import { useForm } from "react-hook-form";
-import { ErrorToast, SuccessToast } from "../../utils/globalFunctions";
-import { useNavigate } from "react-router-dom";
+import depositImage from "../../assets/images/deposit-amount.jpg";
 import { depositBalanceSchema } from "../../utils/customerValidationSchema";
-import { Bounce, ToastContainer } from "react-toastify";
+import { authPageStyle } from "../../utils/pageBackground";
+import { useAuth } from "../../context/AuthContext";
+import { depositToast, errorToast } from "../../utils/appToast";
+import { api } from "../../utils/api";
+
+const QUICK_AMOUNTS = [500, 1000, 5000, 10000];
 
 const Deposit = () => {
-
+  "use no memo";
+  const { account, refreshAccount } = useAuth();
   const {
     register,
-    formState: { errors },
+    setValue,
+    formState: { errors, isSubmitting },
     reset,
     handleSubmit,
+    getValues,
   } = useForm({
     resolver: zodResolver(depositBalanceSchema),
-    defaultValues: {
-      account_number: "",
-      balance: "",
-    },
+    defaultValues: { amount: "" },
   });
-
   const submit = async (data) => {
-    await axios
-      .post(`http://localhost:4000/account/${data.account_number}`,{
-        balance : data.balance
-      })
-      .then((res) => {
-        SuccessToast(res.data.message);
-        reset();
-      })
-      .catch((error) => {
-        ErrorToast(error.response.data?.message);
+    try {
+      const res = await api.post(`/account/${account.account_number}`, {
+        balance: Number(data.amount),
       });
+      depositToast({ amount: data.amount, balance: res.data.balance });
+      reset();
+      refreshAccount();
+    } catch (error) {
+      errorToast(
+        error.response?.data?.message || "Deposit failed. Please try again.",
+      );
+    }
   };
-  
+
   return (
     <div
-      className={`container-fluid box d-flex justify-content-center align-items-center h-100 ${styles.backgroundImage}`}
+      className="d-flex align-items-center justify-content-center px-3 py-5"
+      style={authPageStyle(depositImage)}
     >
-      <form
-        onSubmit={handleSubmit(submit)}
-        className={`row g-3 bg-dark bg-opacity-25 bg-radient rounded p-4 ${styles.formContainer}`}
-      >
-        <div>
-          <label htmlFor="accountNumberInput" className="form-label text-light">
-            Account Number
-          </label>
-          <input
-            type="number"
-            className="form-control shadow p-2 bg-body-tertiary rounded"
-            id="accountNumberInput"
-            {...register("account_number")}
-          />
-          <div id="accountNumberInput" className="form-text">
-            <p className="error-message">{errors.account_number?.message}</p>
-          </div>
-        </div>
-        <div className="input-group mb-3">
-          <label htmlFor="balanceInput" className="form-label text-light">
-            Enter Amount
-          </label>
-          <div className="input-group mb-3">
-            <span className="input-group-text">₹</span>
-            <input
-              type="number"
-              className="form-control shadow p-2 bg-body-tertiary rounded"
-              id="balanceInput"
-              {...register("balance")}
-              aria-label="Amount (to the nearest rupee)"
-            />
+      <div className="card border-0 shadow-lg w-100" style={{ maxWidth: 460 }}>
+        <div className="card-body p-4 p-md-5">
+          <div className="text-center mb-4">
+            <h1 className="h3 fw-bold mb-1">Deposit Money</h1>
+            <p className="text-body-secondary mb-0">
+              Add funds to your account
+            </p>
           </div>
 
-          <div id="balanceInput" className="form-text">
-            <p className="error-message">{errors.balance?.message}</p>
+          {/* Account summary */}
+          <div className="bg-body-tertiary rounded p-3 mb-4">
+            {account ? (
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <div className="fw-semibold">{account.name}</div>
+                  <small className="text-body-secondary">
+                    A/C {account.account_number}
+                  </small>
+                </div>
+                <div className="text-end">
+                  <small className="text-body-secondary d-block">
+                    Current balance
+                  </small>
+                  <span className="fw-bold">₹{account.balance}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-body-secondary">
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  aria-hidden="true"
+                />
+                Loading account...
+              </div>
+            )}
           </div>
+
+          {/* <form onSubmit={handleSubmit(submit)} noValidate> */}
+          <form
+            onSubmit={handleSubmit(submit, (errs) =>
+              console.log(errs, getValues()),
+            )}
+            noValidate
+          >
+            <label htmlFor="amountInput" className="form-label">
+              Amount
+            </label>
+            <div className="input-group shadow">
+              <span className="input-group-text">₹</span>
+              <input
+                type="number"
+                id="amountInput"
+                step="0.01"
+                inputMode="decimal"
+                placeholder="Enter amount"
+                className={`form-control ${errors.amount ? "is-invalid" : ""}`}
+                aria-invalid={!!errors.amount}
+                aria-describedby="amountError"
+                {...register("amount")}
+              />
+            </div>
+            {errors.amount && (
+              <div
+                id="amountError"
+                className="text-danger small mt-1"
+                role="alert"
+              >
+                {errors.amount.message}
+              </div>
+            )}
+
+            {/* Quick amounts */}
+            <div className="d-flex flex-wrap gap-2 mt-3">
+              {QUICK_AMOUNTS.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() =>
+                    setValue("amount", String(value), { shouldValidate: true })
+                  }
+                >
+                  +₹{value}
+                </button>
+              ))}
+            </div>
+            {console.log("as", isSubmitting, account)}
+            <button
+              className="btn btn-primary w-100 mt-4"
+              type="submit"
+              disabled={isSubmitting || !account}
+            >
+              {isSubmitting ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                  />
+                  Depositing...
+                </>
+              ) : (
+                "Deposit"
+              )}
+            </button>
+          </form>
         </div>
-        <div className="col-12 text-center">
-          <button className="btn btn-primary" type="submit">
-            Deposit
-          </button>
-        </div>
-      </form>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
+      </div>
     </div>
   );
 };

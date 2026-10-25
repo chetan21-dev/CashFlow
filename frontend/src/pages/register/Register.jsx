@@ -5,12 +5,12 @@ import axios from "axios";
 import registerImage from "../../assets/images/register-customer.jpg";
 import FormField from "../../components/common/FormField";
 import { customerValidationSchema } from "../../utils/customerValidationSchema";
-import { ErrorToast, SuccessToast } from "../../utils/globalFunctions";
 import { authPageStyle } from "../../utils/pageBackground";
-
-const API = "http://localhost:4000";
+import { errorToast, successToast } from "../../utils/appToast";
+import { api } from "../../utils/api";
 
 const Register = () => {
+  "use no memo";
   const navigate = useNavigate();
 
   const {
@@ -35,19 +35,18 @@ const Register = () => {
 
   const submit = async (data) => {
     try {
-      const { data: res } = await axios.post(`${API}/customer/register`, data);
+      const { data: res } = await api.post("/customer/register", data);
 
       // Create the bank account for the new customer
-      await axios.post(`${API}/account`, {
+      await api.post("/account", {
         name: `${res.user.first_name} ${res.user.last_name}`,
         email: res.user.email,
       });
-
-      SuccessToast(res.message);
+      successToast(res.message);
       reset();
       navigate("/login");
     } catch (error) {
-      ErrorToast(
+      errorToast(
         error.response?.data?.error ||
           error.response?.data?.message ||
           "Registration failed. Please try again."

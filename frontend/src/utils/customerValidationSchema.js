@@ -45,13 +45,14 @@ export const customerLoginSchema = z.object({
 })
 
 export const depositBalanceSchema = z.object({
-    account_number : z.string()
-    .min(1, "Account number is required")
-    .max(5, "Account number should be only 5 digits"),
-    balance : z.string()
+  amount: z
+    .string()
+    .trim()
     .min(1, "Amount is required")
-    .regex(/^(?:[1-9]\d{2,}|\d{4,})$/, "Amount should be atleast 100"),
-})
+    .refine((v) => !Number.isNaN(Number(v)), "Enter a valid amount")
+    .refine((v) => Number(v) >= 100, "Amount should be at least ₹100")
+    .refine((v) => Number(v) <= 1000000, "Maximum deposit is ₹10,00,000"),
+});
 
 export const transactionSchema = z.object({
     account_number : z.string()
