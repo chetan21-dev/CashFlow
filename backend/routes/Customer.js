@@ -1,95 +1,59 @@
 const router = require("express").Router();
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const asyncHandler = require("../utils/asyncHandler");
+const HttpError = require("../utils/httpError");
+const verifyToken = require("../middleware/verifyToken");
+const requireSelf = require("../middleware/requireSelf");
 const { customerModel } = require("../models/customerModel");
-const { accountModel } = require("../models/accountModel");
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
-//GET API
-router.get("", async (req, res) => {
-  const users = await customerModel.find();
-  res.send({
-    message: "success",
-    users,
-  });
-});
+// ───────── Public ─────────
+router.post(
+  "/register",
+  asyncHandler(async (req, res) => {
+    const { first_name, middle_name, last_name, gender, email, mobile, pan_number, aadhaar_number, password } = req.body;
 
-//GET API with query params
-router.get("/query", async (req, res) => {
-  const id = req.query.id;
-  const user = await customerModel.findById(id);
-  res.send({
-    user,
-  });
-});
+    if (typeof email !== "string" || typeof password !== "string") {
+      throw new HttpError(400, "Email and password are required");
+    }
+    if (await customerModel.exists({ email })) {
+      throw new HttpError(409, "Email is already registered");
+    }
 
-//GET API with path variable
-router.get("/:id", async (req, res) => {
-  const id = req.params.id;
-  const user = await customerModel.findById(id);
-  if (!user) {
-    res.status(404).json({
-      message: `User with ${id} not found`,
+    const user = await customerModel.create({
+      first_name, middle_name, last_name, gender, email, mobile, pan_number, aadhaar_number,
+      password: await bcrypt.hash(password, 10),
     });
-  }
-  res.status(200).json({
-    user,
-    message: "success",
-  });
-});
 
-//To register Customer
-router.post("/register", async (req, res) => {
-  //Query to add the customer into database
-  const user = await customerModel.create(req.body);
-  res.status(200).json({
-    message: "Data added successfully",
-    user,
-  });
-});
+    const { password: _removed, ...safeUser } = user.toObject();
+    res.status(201).json({ message: "Data added successfully", user: safeUser });
+  })
+);
 
-//To register Customer
-router.post("/login", async (req, res) => {
-  //Query to add the customer into database
-  const { email, password } = req.body;
-  const customer = await customerModel.findOne({ email }).lean();
-  const account = await accountModel.findOne({ email });
-  customer['account_number'] = account.account_number
-  if (!customer) return res.status(401).json({ error: "Email not found!" });
-  if (customer?.password != password) return res.status(401).json({ error: "Invalid password" });
+// ───────── Protected: everything below needs a valid access token ─────────
+console.log("verifyToken is:", typeof verifyToken, verifyToken);
+router.use(verifyToken);
 
-  const token = jwt.sign(
-    {
-      _id: customer._id,
-      email: customer.email,
-      account_number : customer.account_number,
-      password: customer.password,
-    },
-    PRIVATE_KEY,
-  );
-  customer.account_number = account?.account_number
-  return res
-    .status(200)
-    .json({ message: "Customer logged in successfully", token, customer});
-});
+router.get(
+  "/:id",
+  requireSelf,
+  asyncHandler(async (req, res) => {
+    const user = await customerModel.findById(req.params.id).select("-password");
+    if (!user) throw new HttpError(404, "User not found");
+    res.json({ message: "success", user });
+  })
+);
 
-//PUT API
-router.put("/:id", async (req, res) => {
-  const id = req.params.id;
-  const userRequest = req.body;
-  //Query to add the user into database
-  const user = await customerModel.findOneAndReplace({ _id: id }, userRequest, {
-    new: true,
-  });
-  if (!user) {
-    res.status(404).json({
-      message: "User not found!",
-    });
-  }
-  res.status(200).json({
-    message: "Data updated successfully",
-    user,
-  });
-});
+router.put(
+  "/:id",
+  requireSelf,
+  asyncHandler(async (req, res) => {
+    const { first_name, middle_name, last_name, gender, mobile } = req.body;
+    const user = await customerModel
+      .findByIdAndUpdate(req.params.id, { first_name, middle_name, last_name, gender, mobile }, { new: true })
+      .select("-password");
+    if (!user) throw new HttpError(404, "User not found");
+    res.json({ message: "Data updated successfully", user });
+  })
+);
 
 module.exports = router;

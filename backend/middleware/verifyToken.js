@@ -1,19 +1,20 @@
-const jwt = require("jsonwebtoken");
+const { verifyAccessToken } = require("../utils/jwt");
 
 const verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Access denied. No token provided" });
   }
 
-  const token = authHeader.split(" ")[1];
-
   try {
-    req.user = jwt.verify(token, process.env.PRIVATE_KEY);
+    req.user = verifyAccessToken(header.split(" ")[1]); // { id, email, account_number }
     next();
   } catch (err) {
-    res.status(401).json({ message: "Invalid or expired token" });
+    const expired = err.name === "TokenExpiredError";
+    res.status(401).json({
+      message: expired ? "Token expired" : "Invalid token",
+      code: expired ? "TOKEN_EXPIRED" : "TOKEN_INVALID",
+    });
   }
 };
 

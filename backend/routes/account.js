@@ -1,65 +1,76 @@
 const router = require("express").Router();
+const asyncHandler = require("../utils/asyncHandler");
+const HttpError = require("../utils/httpError");
+const verifyToken = require("../middleware/verifyToken");
+const validate = require("../middleware/validate");
+const { depositSchema } = require("../validators/schemas");
 const { accountModel } = require("../models/accountModel");
 const { generateAccountNumber } = require("../utils/generateAccountNumber");
-const verifyToken = require("../middleware/verifyToken");
 
-//API to create new customer account
-router.post("", async (req, res) => {
-  const account = req.body;
-  account.balance = 0;
-  account.account_number = generateAccountNumber();
-  const newAccount = await accountModel.create(account);
-  res.status(200).json({
-    message: "Account created successfully",
-    account_details: newAccount,
-  });
-});
+// ───────── Public (the Register page calls this before the user can log in) ─────────
+router.post(
+  "/",
+  asyncHandler(async (req, res) => {
+    const { name, email } = req.body;
+    if (typeof name !== "string" || typeof email !== "string") {
+      throw new HttpError(400, "Name and email are required");
+    }
+    if (await accountModel.exists({ email })) {
+      throw new HttpError(409, "Account already exists for this email");
+    }
 
-// To Get account details of the logged-in user's 
-router.get("/me", verifyToken, async (req, res) => {
-  const account = await accountModel
-    .findOne({ account_number: Number(req.user.account_number) })
-    .select("account_number name balance")
-    .lean();
+    // Only the fields we expect are saved, and balance always starts at 0
+    const account = await accountModel.create({
+      name,
+      email,
+      balance: 0,
+      account_number: generateAccountNumber(),
+    });
+    res.status(201).json({ message: "Account created successfully", account_details: account });
+  })
+);
 
-  if (!account) {
-    return res.status(404).json({ message: "Account not found" });
-  }
+// ───────── Protected ─────────
+router.use(verifyToken);
 
-  res.status(200).json({
-    message: "success",
-    account_number: account.account_number,
-    name: account.name,
-    balance: account.balance,
-  });
-});
+// Details of the logged-in user's own account
+router.get(
+  "/me",
+  asyncHandler(async (req, res) => {
+    const account = await accountModel
+      .findOne({ account_number: Number(req.user.account_number) })
+      .select("account_number name balance")
+      .lean();
+    if (!account) throw new HttpError(404, "Account not found");
 
-//API to deposit amount to self account
-router.post("/:account_number", verifyToken, async (req, res) => {
-  if (Number(req.params.account_number) !== Number(req.user.account_number)) {
-    return res.status(403).json({ message: "Access denied" });
-  }
-
-  const amount = Number(req.body.balance);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return res.status(400).json({ message: "Invalid amount" });
-  }
-
-  const account = await accountModel.findOneAndUpdate(
-    { account_number: req.params.account_number },
-    { $inc: { balance: amount } },
-    { new: true },
-  );
-  if (account) {
-    res.status(200).json({
-      message: "Amount deposited",
+    res.json({
+      message: "success",
+      account_number: account.account_number,
+      name: account.name,
       balance: account.balance,
     });
-  } else {
-    res.status(404).json({
-      message: "customer not found!",
-    });
-  }
-});
+  })
+);
+
+// Deposit into your own account
+router.post(
+  "/:account_number",
+  validate(depositSchema),
+  asyncHandler(async (req, res) => {
+    if (Number(req.params.account_number) !== Number(req.user.account_number)) {
+      throw new HttpError(403, "Access denied");
+    }
+
+    // The account comes from the token, not from the URL
+    const account = await accountModel.findOneAndUpdate(
+      { account_number: Number(req.user.account_number) },
+      { $inc: { balance: req.body.balance } },
+      { new: true }
+    );
+    if (!account) throw new HttpError(404, "Account not found");
+
+    res.json({ message: "Amount deposited", balance: account.balance });
+  })
+);
 
 module.exports = router;
